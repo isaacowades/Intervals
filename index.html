@@ -57,10 +57,9 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .summary .err{color:var(--work)}
 .loadnew{border:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:3px 10px;font:600 .82rem var(--font-label);cursor:pointer}
 
-.clock{--phase:var(--prep);--frac:1;position:relative;overflow:hidden;background:var(--surface);border-radius:18px;border:1.5px solid var(--line);
+.clock{--phase:var(--prep);position:relative;overflow:hidden;background:var(--surface);border-radius:18px;border:1.5px solid var(--line);
   padding:18px 18px 16px;display:flex;flex-direction:column;gap:6px;isolation:isolate}
-.clock::before{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--frac)*100%);background:color-mix(in srgb,var(--phase) 24%,var(--surface));z-index:-1}
-.clock::after{content:"";position:absolute;left:0;right:0;bottom:calc(var(--frac)*100%);height:3px;background:var(--phase);z-index:-1;opacity:.9}
+.fill{position:absolute;inset:0;z-index:-1;pointer-events:none;background:color-mix(in srgb,var(--phase) 24%,var(--surface));border-top:3px solid color-mix(in srgb,var(--phase) 90%,transparent);transform:translateY(0);will-change:transform}
 .toprow{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .pill{background:var(--phase);color:var(--surface);font:600 .95rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:6px;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .count{font:600 .95rem var(--font-label);font-variant-numeric:tabular-nums;color:var(--muted)}
@@ -85,6 +84,8 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .awake::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--dot)}
 .awake.on{--dot:var(--rest);color:var(--ink)}
 .awake.off{--dot:var(--work);color:var(--work)}
+.note{font:600 .9rem var(--font-label);letter-spacing:.02em;color:var(--muted);margin-top:-8px}
+.note.tap{color:var(--ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 #nosleep{position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;pointer-events:none}
 
 .list h2{font:600 .78rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
@@ -134,6 +135,7 @@ body.workout .awake{margin-top:-4px}
   body.workout .clock{grid-column:1;grid-row:1 / span 3;padding-block:10px}
   body.workout .digits{font-size:clamp(5rem,46vh,15rem);padding-block:2px}
   body.workout .awake{grid-column:2;grid-row:1;margin:0}
+  body.workout .note{grid-column:2;grid-row:2;margin:0;align-self:start}
   body.workout .controls{grid-column:2;grid-row:3;grid-template-columns:1fr 1fr 1fr}
   body.workout #play{grid-column:1 / -1;grid-row:1;height:96px}
   body.workout .controls button{height:64px}
@@ -163,6 +165,7 @@ body.workout .awake{margin-top:-4px}
   </form>
 
   <section class="clock" id="clock" aria-label="Timer">
+    <div class="fill" id="fill" aria-hidden="true"></div>
     <div class="toprow"><span class="pill" id="phase">Ready</span><span class="count" id="count"></span></div>
     <div class="digits" id="digits" role="timer">10</div>
     <div class="tags" id="tags"></div>
@@ -179,6 +182,7 @@ body.workout .awake{margin-top:-4px}
     <button id="nextbtn" type="button" aria-label="Next interval"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
   </div>
   <div class="awake" id="awake" role="status" hidden></div>
+  <div class="note" id="note" role="status" hidden></div>
   <div class="opts">
     <label><input type="checkbox" id="leadin" checked> 5-second lead-in</label>
     <label><input type="checkbox" id="voice"> Call out phase names</label>
@@ -318,6 +322,7 @@ const $=id=>document.getElementById(id);
 const EXAMPLES=['12x10s','6-10-8/4-10-8/2-10-8','tabata','8x20s/10s','10 rounds of 45 seconds work 15 seconds rest','5m warmup, 6x1:30/30s, 3m cooldown','3x(8x20s/10s, 1m rest)','emom 10','plank 1m, rest 15s, side plank 30s'];
 const COLORS={work:'var(--work)',rest:'var(--rest)',easy:'var(--easy)',prep:'var(--prep)'};
 let base=[],plan=[],idx=0,elapsed=0,running=false,lastT=0,lastSec=null,pending=null,finished=false;
+let baseText='',pendingText='';
 let soundOn=true,ctx=null,wake=null;
 
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -345,12 +350,12 @@ function applyText(text,force){
     return;
   }
   if(!force&&!idle()){
-    pending=intervals;
+    pending=intervals;pendingText=text;
     sum.innerHTML=`<span>New plan ready: <b>${intervals.length}</b> intervals, <b>${fmt(total(intervals),true)}</b>.</span><button type="button" class="loadnew" id="loadnew">Load it</button>`;
-    $('loadnew').onclick=()=>{base=pending;pending=null;resetTimer();renderSummary([])};
+    $('loadnew').onclick=()=>{base=pending;baseText=pendingText;pending=null;resetTimer();renderSummary([])};
     return;
   }
-  base=intervals;pending=null;
+  base=intervals;baseText=text;pending=null;
   resetTimer();
   renderSummary(errors);
 }
@@ -387,92 +392,143 @@ function markList(){
   if(cur&&running){const ol=$('list');const top=cur.offsetTop-ol.offsetTop;if(top<ol.scrollTop||top>ol.scrollTop+ol.clientHeight-40)ol.scrollTop=top-40}
 }
 
+/* Writes only what changed: the clock is redrawn many times a second, and rewriting unchanged text and layout
+   every frame is heavy work for a phone over a long workout. */
+const shown=new Map();
+function put(id,v){if(shown.get(id)!==v){shown.set(id,v);$(id).textContent=v}}
+function putPhase(c){if(shown.get('--phase')!==c){shown.set('--phase',c);$('clock').style.setProperty('--phase',c)}}
+function putFill(f){const v=`translateY(${((1-f)*100).toFixed(2)}%)`;if(shown.get('fill')!==v){shown.set('fill',v);$('fill').style.transform=v}}
 function render(){
-  const clock=$('clock');
   const wk=!idle()&&plan.length>0;
   if(document.body.classList.contains('workout')!==wk)document.body.classList.toggle('workout',wk);
-  $('hint').textContent=wk?(running?'Tap the clock to pause':'Paused · tap the clock to resume · Reset to edit'):'';
-  if(!plan.length){$('digits').textContent='0';$('phase').textContent='No plan';$('tags').textContent='';$('next').textContent='';return}
+  put('hint',wk?(running?'Tap the clock to pause':'Paused · tap the clock to resume · Reset to edit'):'');
+  renderNote();
+  if(!plan.length){put('digits','0');put('phase','No plan');put('tags','');setNext(null);return}
   if(finished){
-    clock.style.setProperty('--phase','var(--rest)');clock.style.setProperty('--frac',0);
-    $('phase').textContent='Done';$('digits').textContent=fmt(total(base),true);
-    $('tags').textContent='Workout complete';$('next').textContent='';
-    $('count').textContent=`${plan.length}/${plan.length}`;
-    $('elapsed').textContent=fmt(total(plan),true)+' done';$('remaining').textContent='0:00 left';
-    $('play').textContent='Again';return;
+    putPhase('var(--rest)');putFill(0);
+    put('phase','Done');put('digits',fmt(total(base),true));
+    put('tags','Workout complete');setNext(null,'');
+    put('count',`${plan.length}/${plan.length}`);
+    put('elapsed',fmt(total(plan),true)+' done');put('remaining','0:00 left');
+    put('play','Again');return;
   }
   const it=plan[idx],rem=it.secs-elapsed/1000;
-  clock.style.setProperty('--phase',COLORS[it.kind]);
-  clock.style.setProperty('--frac',Math.max(0,rem/it.secs));
-  $('phase').textContent=it.label;
-  $('digits').textContent=fmt(rem,it.secs>=60);
-  $('tags').textContent=it.tags.join(' · ');
-  const nx=plan[idx+1];
-  $('next').innerHTML=nx?`Next: <b></b> ${fmt(nx.secs,true)}`:'Last one';
-  if(nx)$('next').querySelector('b').textContent=nx.label+(nx.tags.length?' ('+nx.tags[nx.tags.length-1]+')':'');
-  $('count').textContent=`${idx+1}/${plan.length}`;
+  putPhase(COLORS[it.kind]);
+  putFill(Math.max(0,rem/it.secs));
+  put('phase',it.label);
+  put('digits',fmt(rem,it.secs>=60));
+  put('tags',it.tags.join(' · '));
+  setNext(plan[idx+1]);
+  put('count',`${idx+1}/${plan.length}`);
   const done=total(plan.slice(0,idx))+elapsed/1000,all=total(plan);
-  $('elapsed').textContent=fmt(Math.floor(done)+0.0001>done?done:Math.floor(done),true)+' done';
-  $('remaining').textContent=fmt(all-done,true)+' left';
-  $('play').textContent=running?'Pause':(idx||elapsed?'Resume':'Start');
+  put('elapsed',fmt(Math.floor(done)+0.0001>done?done:Math.floor(done),true)+' done');
+  put('remaining',fmt(all-done,true)+' left');
+  put('play',running?'Pause':(idx||elapsed?'Resume':'Start'));
+}
+function setNext(nx,blank){
+  const plain=nx?null:(blank===''||!plan.length?'':'Last one');
+  const key=nx?'n:'+nx.label+'|'+nx.tags.join('|')+'|'+nx.secs:'t:'+plain;
+  if(shown.get('next')===key)return;shown.set('next',key);
+  const el=$('next');
+  if(!nx){el.textContent=plain;return}
+  el.innerHTML=`Next: <b></b> ${fmt(nx.secs,true)}`;
+  el.querySelector('b').textContent=nx.label+(nx.tags.length?' ('+nx.tags[nx.tags.length-1]+')':'');
 }
 
 function tick(){
   if(!running)return;
   const now=performance.now();elapsed+=now-lastT;lastT=now;
-  let changed=false;
+  let steps=0;
   while(running&&elapsed>=plan[idx].secs*1000){
-    elapsed-=plan[idx].secs*1000;idx++;changed=true;
+    elapsed-=plan[idx].secs*1000;idx++;steps++;
     if(idx>=plan.length){finish();return}
-    phaseCue(plan[idx]);
   }
-  const rem=Math.ceil(plan[idx].secs-elapsed/1000);
-  if(rem!==lastSec){if(rem<=3&&rem>=1&&plan[idx].secs>3)beep(880,.09,.25);lastSec=rem}
-  if(changed)markList();
+  if(steps){
+    // The tone was booked ahead on the audio clock; play it now only if it wasn't (audio was down, or time jumped).
+    if(steps===1&&!booked.has(idx+':p'))phaseTone(plan[idx]);
+    speak(plan[idx].label);pruneBooked();markList();saveRun(true);
+  }
+  bookAhead();
+  saveRun();
   render();
 }
-let rafOn=false;
-function loop(){if(!running){rafOn=false;return}requestAnimationFrame(loop);safeTick()}
+let rafOn=false,lastDraw=0;
+/* About 30 redraws a second is plenty for a countdown, and half the work of a 60 Hz screen (a quarter on 120 Hz). */
+function loop(t){if(!running){rafOn=false;return}requestAnimationFrame(loop);if(t-lastDraw<30)return;lastDraw=t;safeTick()}
 function kick(){if(running&&!rafOn){rafOn=true;requestAnimationFrame(loop)}}
 function safeTick(){try{tick()}catch(e){}}
-setInterval(()=>{safeTick();kick();if(running&&needWake&&document.visibilityState==='visible'&&document.hasFocus())requestWake()},250);
+setInterval(()=>{safeTick();kick();keepAudio();if(running&&needWake&&document.visibilityState==='visible'&&document.hasFocus())requestWake()},250);
 
 function start(){
   if(!plan.length)return;
   if(finished){resetTimer()}
   initAudio();
-  running=true;lastT=performance.now();lastSec=null;
+  running=true;lastT=performance.now();lastSec=null;unbook();
   if(idx===0&&elapsed===0)phaseCue(plan[0]);
-  requestWake();kick();render();markList();
+  requestWake();kick();render();markList();saveRun(true);
 }
-function pause(){running=false;releaseWake();render()}
-function resetTimer(){running=false;idx=0;elapsed=0;finished=false;lastSec=null;releaseWake();buildPlan();renderList();render()}
-function finish(){running=false;finished=true;idx=plan.length;releaseWake();beep(1320,.18,.3);setTimeout(()=>beep(1320,.18,.3),260);setTimeout(()=>beep(1760,.5,.3),520);speak('Done');markList();render()}
+function pause(){running=false;unbook();releaseWake();render();saveRun(true)}
+function resetTimer(){running=false;idx=0;elapsed=0;finished=false;lastSec=null;unbook();releaseWake();clearRun();reloads=0;buildPlan();renderList();render()}
+function finish(){running=false;finished=true;idx=plan.length;unbook();releaseWake();clearRun();beep(1320,.18,.3);setTimeout(()=>beep(1320,.18,.3),260);setTimeout(()=>beep(1760,.5,.3),520);speak('Done');markList();render()}
 function jump(i){
   if(i<0)i=0;if(i>=plan.length){if(running||!finished)finish();return}
-  finished=false;idx=i;elapsed=0;lastSec=null;lastT=performance.now();
+  finished=false;idx=i;elapsed=0;lastSec=null;lastT=performance.now();unbook();
   if(running)phaseCue(plan[idx]);
-  markList();render();
+  markList();render();saveRun(true);
 }
 
+/* Sound. iOS suspends or interrupts the audio (a notification, Siri, Control Center); it is resumed as soon as that
+   happens, and beeps are booked a moment ahead on the audio clock so a slow frame can't delay or drop them. */
 function initAudio(){
   try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
-  if(!ctx){try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
-  if(ctx&&ctx.state==='suspended')ctx.resume();
+  if(ctx&&ctx.state==='closed')ctx=null;
+  if(!ctx){try{ctx=new (window.AudioContext||window.webkitAudioContext)();ctx.onstatechange=onAudioState}catch(e){ctx=null}}
+  resumeAudio();
+}
+let lastResume=0;
+function resumeAudio(){
+  if(!ctx||ctx.state==='running'||ctx.state==='closed')return;
+  lastResume=performance.now();
+  try{const p=ctx.resume();if(p&&p.catch)p.catch(()=>{})}catch(e){}
+}
+function onAudioState(){
+  if(!ctx)return;
+  if(ctx.state!=='running'){unbook();if(running)resumeAudio()}   // booked beeps would play late once it resumes
+  else if(running)bookAhead();
+  renderNote();
+}
+function keepAudio(){if(running&&soundOn&&ctx&&ctx.state!=='running'&&performance.now()-lastResume>1000)resumeAudio()}
+function audioOk(){return soundOn&&ctx&&ctx.state==='running'}
+function tone(f,d,vol,at){
+  const o=ctx.createOscillator(),g=ctx.createGain(),t=Math.max(at,ctx.currentTime);
+  o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*.5,t+.01);g.gain.setValueAtTime(vol*.5,t+d-.03);g.gain.linearRampToValueAtTime(0,t+d);
+  o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+d+.02);
+  return o;
 }
 function beep(f,d,vol){
-  if(!soundOn||!ctx)return;
-  if(ctx.state!=='running'){try{ctx.resume()}catch(e){}}
-  try{
-    const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime;
-    o.type='square';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol*.5,t+.01);g.gain.setValueAtTime(vol*.5,t+d-.03);g.gain.linearRampToValueAtTime(0,t+d);
-    o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+d+.02);
-  }catch(e){}
+  if(!audioOk()){if(soundOn)resumeAudio();return}
+  try{tone(f,d,vol,ctx.currentTime)}catch(e){}
 }
-function phaseCue(it){
-  if(it.kind==='work')beep(1320,.45,.3);else if(it.kind==='rest')beep(620,.5,.3);else beep(990,.3,.25);
-  speak(it.label);
+const TONES={work:[1320,.45,.3],rest:[620,.5,.3],easy:[990,.3,.25],prep:[990,.3,.25]};
+function phaseTone(it){beep(...(TONES[it.kind]||TONES.easy))}
+function phaseCue(it){phaseTone(it);speak(it.label)}
+const booked=new Map();   // "interval:what" -> {o, at}
+function book(key,at,f,d,vol){
+  if(booked.has(key))return;
+  try{booked.set(key,{o:tone(f,d,vol,at),at})}catch(e){}
 }
+function bookAhead(){
+  if(!running||!audioOk()||idx>=plan.length)return;
+  const now=ctx.currentTime,AHEAD=1.2,left=(plan[idx].secs*1000-elapsed)/1000;
+  if(plan[idx].secs>3)for(const k of [3,2,1]){const dt=left-k;if(dt>-0.05&&dt<AHEAD)book(idx+':c'+k,now+Math.max(0,dt),880,.09,.25)}
+  const nx=plan[idx+1];
+  if(nx&&left<AHEAD)book((idx+1)+':p',now+Math.max(0,left),...(TONES[nx.kind]||TONES.easy));
+}
+function unbook(){
+  if(ctx)for(const b of booked.values()){if(b.at>ctx.currentTime+0.005){try{b.o.stop()}catch(e){}}}
+  booked.clear();
+}
+function pruneBooked(){for(const k of [...booked.keys()]){if(parseInt(k,10)<idx)booked.delete(k)}}
 function speak(txt){
   if(!soundOn||!$('voice').checked||!('speechSynthesis' in window))return;
   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt);u.rate=1.05;speechSynthesis.speak(u)}catch(e){}
@@ -507,20 +563,23 @@ function requestWake(){
 function releaseWake(){try{wake&&wake.release()}catch(e){}wake=null;stopVideo();setAwake('')}
 /* Coming back from Control Center, the app switcher or a lock: restart drawing, sound and the screen-awake request. */
 function onReturn(){
-  if(ctx&&ctx.state!=='running'&&ctx.state!=='closed'){try{ctx.resume()}catch(e){}}
   if(ctx&&ctx.state==='closed')ctx=null;
+  resumeAudio();
   if(running){lastT=Math.min(lastT,performance.now());kick();safeTick();if(!wake)needWake=true}
   render();
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')onReturn()});
 window.addEventListener('focus',onReturn);
 window.addEventListener('pageshow',onReturn);
-document.addEventListener('pointerdown',()=>{if(ctx&&ctx.state!=='running'&&ctx.state!=='closed'){try{ctx.resume()}catch(e){}}if(running&&!wake&&!document.hidden)requestWake()},{capture:true,passive:true});
+document.addEventListener('pointerdown',()=>{if(soundOn&&(running||ctx)&&(!ctx||ctx.state!=='running'))initAudio();if(running&&!wake&&!document.hidden)requestWake()},{capture:true,passive:true});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveRun(true)});
+window.addEventListener('pagehide',()=>saveRun(true));
+$('note').addEventListener('click',()=>{initAudio();renderNote()});   // a click counts as the tap iOS needs before sound
 
 /* ---------- Wiring ---------- */
 $('play').onclick=()=>running?pause():start();
 $('clock').addEventListener('click',()=>{if(running)pause();else if(plan.length)start()});
-$('reset').onclick=()=>{if(pending){base=pending;pending=null;renderSummary([])}resetTimer()};
+$('reset').onclick=()=>{if(pending){base=pending;baseText=pendingText;pending=null;renderSummary([])}resetTimer()};
 $('prev').onclick=()=>jump(elapsed>2000||idx===0||finished?(finished?plan.length-1:idx):idx-1);
 $('nextbtn').onclick=()=>jump(idx+1);
 $('sound').onclick=e=>{soundOn=!soundOn;e.currentTarget.setAttribute('aria-pressed',soundOn);e.currentTarget.textContent=soundOn?'Sound on':'Sound off';store('ic-sound',soundOn?'1':'0');if(soundOn)initAudio()};
@@ -536,6 +595,44 @@ document.addEventListener('keydown',e=>{
 });
 EXAMPLES.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=x;
   b.onclick=()=>{$('plan').value=x;applyText(x,true);store('ic-plan',x)};$('chips').appendChild(b)});
+
+/* The running workout is saved every second, so if iOS reloads the app mid-workout it picks up where it was,
+   counting the time it was gone as done (the user's choice, 15 Nov). */
+const RUN='ic-run';
+let lastSave=0,reloads=0,lastReload=null,reloadAt='';
+function saveRun(force){
+  if(!plan.length||finished||(idx===0&&elapsed===0&&!running))return;
+  const now=Date.now();if(!force&&now-lastSave<1000)return;lastSave=now;
+  store(RUN,JSON.stringify({v:1,text:baseText,lead:$('leadin').checked,n:plan.length,idx,elapsed:Math.round(elapsed),running,at:now,reloads,last:lastReload&&lastReload.getTime()}));
+}
+function clearRun(){try{localStorage.removeItem(RUN)}catch(e){}}
+function readRun(){try{const r=JSON.parse(load(RUN)||'null');return r&&r.v===1&&typeof r.text==='string'?r:null}catch(e){return null}}
+function restoreRun(r){
+  if(!r||Date.now()-r.at>3*3600e3)return false;
+  $('plan').value=r.text;store('ic-plan',r.text);$('leadin').checked=!!r.lead;
+  applyText(r.text,true);
+  if(plan.length!==r.n||r.idx>=plan.length)return false;
+  idx=r.idx;elapsed=r.elapsed;reloads=(r.reloads||0)+1;lastReload=new Date();
+  reloadAt=lastReload.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  if(r.running){
+    elapsed+=Math.max(0,Date.now()-r.at);
+    while(elapsed>=plan[idx].secs*1000){elapsed-=plan[idx].secs*1000;idx++;if(idx>=plan.length)break}
+    if(idx>=plan.length){finished=true;idx=plan.length;clearRun();markList();render();return true}
+    running=true;lastT=performance.now();requestWake();kick();
+  }
+  markList();render();saveRun(true);
+  return true;
+}
+function renderNote(){
+  const el=$('note');
+  if(!reloads){if(!el.hidden)el.hidden=true;return}
+  let t=`The app reloaded ${reloads===1?'once':reloads+' times'} during this workout (last at ${reloadAt}) and picked up where you were.`;
+  const mute=running&&soundOn&&!audioOk();
+  if(mute)t+=' Tap here to bring the sound back.';
+  el.classList.toggle('tap',mute);
+  if(el.hidden)el.hidden=false;
+  if(el.textContent!==t)el.textContent=t;
+}
 
 /* Saved routines (stored on this device only) */
 let routines=[];
@@ -578,11 +675,12 @@ $('savename').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefaul
 $('plan').addEventListener('input',()=>renderSaved());
 
 (function init(){
+  const run=readRun();   // read before applyText, whose reset clears it
   const p=load('ic-plan');if(p)$('plan').value=p;
   if(load('ic-sound')==='0'){soundOn=false;$('sound').setAttribute('aria-pressed','false');$('sound').textContent='Sound off'}
   if(load('ic-lead')==='0')$('leadin').checked=false;
   if(load('ic-voice')==='1')$('voice').checked=true;
-  applyText($('plan').value,true);
+  if(!restoreRun(run))applyText($('plan').value,true);
   renderSaved();
 })();
 </script>
