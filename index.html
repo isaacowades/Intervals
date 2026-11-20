@@ -68,10 +68,15 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .toprow{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .pill{background:var(--phase);color:var(--surface);font:600 .95rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:6px;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .count{font:600 .95rem var(--font-label);font-variant-numeric:tabular-nums;color:var(--muted)}
+.toprow .right{display:flex;align-items:center;gap:10px}
+.sndbtn{display:none;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.sndbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sndbtn[aria-pressed="false"]{color:var(--muted)}
 .digits{font-family:var(--font-display);font-weight:800;font-size:clamp(7rem,36vw,13rem);line-height:.9;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.01em;padding-block:10px 4px}
 .tags{text-align:center;font:600 1.15rem var(--font-label);letter-spacing:.04em;min-height:1.5em;font-variant-numeric:tabular-nums}
 .next{text-align:center;color:var(--muted);font:500 .95rem var(--font-label);min-height:1.4em}
 .next b{color:var(--ink);font-weight:600}
+.next .k::after{content:":"}
 .strip{display:flex;gap:2px;height:10px;margin-top:10px;border-radius:3px;overflow:hidden}
 .strip i{display:block;min-width:2px;background:var(--c);opacity:.35}
 .strip i.done{opacity:.9}
@@ -79,7 +84,8 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .totals{display:flex;justify-content:space-between;font:500 .85rem var(--font-label);color:var(--muted);font-variant-numeric:tabular-nums}
 
 .controls{display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:8px}
-.controls button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;height:58px;font:600 .95rem var(--font-label);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.controls button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;height:58px;font:600 .95rem var(--font-label);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 .controls button svg{width:22px;height:22px;fill:currentColor}
 #play{background:var(--ink);color:var(--bg);border-color:var(--ink);font-size:1.1rem}
 .controls button:disabled{opacity:.4;cursor:default}
@@ -91,6 +97,7 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .awake.off{--dot:var(--work);color:var(--work)}
 .note{font:600 .9rem var(--font-label);letter-spacing:.02em;color:var(--muted);margin-top:-8px}
 .note.tap{color:var(--ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.holdhint{display:none;text-align:center;font:500 .85rem var(--font-label);color:var(--muted);margin-top:-6px}
 #nosleep{position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;pointer-events:none}
 
 .list h2{font:600 .78rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
@@ -134,59 +141,53 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .hint{text-align:center;font:500 .85rem var(--font-label);color:var(--muted);min-height:1.2em}
 .clock{-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 
-/* Workout mode: once a workout has started, only the clock and controls remain. */
-body.workout .entry,body.workout .list,body.workout .help,body.workout .opts{display:none}
-body.workout{padding-block:12px}
+/* Workout mode: once a workout has started, only the clock and controls remain. No header; the phase as large
+   coloured text with a sound button in the corner; the number sized by its format so it never jumps
+   mid-interval; the next interval in a panel along the bottom of the clock; Reset only after a one-second hold. */
+body.workout header,body.workout .entry,body.workout .list,body.workout .help,body.workout .opts{display:none}
+body.workout{padding-block:12px;touch-action:none}   /* no pan or double-tap zoom; taps still work */
+html.lock,html.lock body{overflow:hidden;overscroll-behavior:none}
+body.workout .fill{bottom:var(--nh,0px)}   /* the level drains to the top of the Next panel, not behind it */
 body.workout .wrap{min-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));gap:14px}
-body.workout .clock{flex:1;justify-content:center;cursor:pointer}
+body.workout .clock{flex:1;justify-content:center;cursor:pointer;container-type:inline-size}
 body.workout .toprow{margin-bottom:auto}
-body.workout .totals{margin-top:auto}
-body.workout .digits{font-size:clamp(8rem,46vw,18rem)}
-body.workout .tags{font-size:1.45rem}
-body.workout .controls button{height:72px}
-body.workout .awake{margin-top:-4px}
-/* Layout B (the user's pick, 20 Nov): no header, the phase as large coloured text with a sound button in the
-   corner, the number sized by its format so it never jumps mid-interval, the next interval in a panel along
-   the bottom of the clock, and Reset only after a one-second hold. */
-body.workout header{display:none}
-.toprow .right{display:flex;align-items:center;gap:10px}
-.sndbtn{display:none;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.sndbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.sndbtn[aria-pressed="false"]{color:var(--muted)}
-body.workout .sndbtn{display:flex}
 body.workout .pill{background:none;color:var(--phase);padding:0;border-radius:0;font:800 clamp(2rem,10vw,3.2rem)/1 var(--font-display);letter-spacing:.04em;max-width:75%}
+body.workout .sndbtn{display:flex}
 /* Sized to fill about 90% of the clock's width (cqi) for the widest text of each format, measured in this font:
    "44" is 0.94 em wide, "9:59" 1.62, "59:59" 2.08, "1:00:00" 2.77; capped by screen height. */
-body.workout .clock{container-type:inline-size}
 body.workout .digits.s{font-size:min(96cqi,40dvh)}
 body.workout .digits.m{font-size:min(55cqi,30dvh)}
 body.workout .digits.mm{font-size:min(43cqi,24dvh)}
 body.workout .digits.h{font-size:min(32cqi,19dvh)}
-.next .k::after{content:":"}
+body.workout .tags{font-size:1.45rem}
+body.workout .totals{margin-top:auto}
 body.workout .next{order:10;margin:10px -18px -16px;padding:10px 18px 14px;text-align:left;color:var(--ink);font:600 1.7rem/1.2 var(--font-label);
   border-top:3px solid var(--nextc,var(--line));background:color-mix(in srgb,var(--nextc,var(--line)) 14%,var(--surface))}
 body.workout .next .k{display:block;font:600 .8rem var(--font-label);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 body.workout .next .k::after{content:none}
 body.workout .next .nt{color:var(--muted);font-variant-numeric:tabular-nums}
-.controls button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+body.workout .controls button{height:72px}
 body.workout #reset{background:linear-gradient(var(--work),var(--work)) left/0% 100% no-repeat,var(--surface)}
 body.workout #reset.holding{background-size:100% 100%,auto;transition:background-size 1s linear}
-.holdhint{display:none;text-align:center;font:500 .85rem var(--font-label);color:var(--muted);margin-top:-6px}
 body.workout .holdhint{display:block}
+body.workout.noted .holdhint,body.workout.asleep .holdhint,body.workout.asleep .note{display:none}
+body.workout .awake{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.workout .note{margin-top:-6px;text-align:center;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.workout .awake{margin-top:-4px}
 @media (orientation: landscape) and (max-height: 540px){
+  body.workout .wrap{max-width:none;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(200px,1fr);grid-template-rows:auto 1fr auto;column-gap:16px;row-gap:10px}
+  body.workout .clock{grid-column:1;grid-row:1 / span 3;padding-block:10px}
+  body.workout .pill{font-size:1.8rem}
+  body.workout .sndbtn{width:36px;height:36px}
+  body.workout .digits{padding-block:2px}
   body.workout .digits.s,body.workout .digits.m{font-size:clamp(5rem,42vh,15rem)}
   body.workout .digits.mm{font-size:min(36vh,43cqi)}
   body.workout .digits.h{font-size:min(28vh,32cqi)}
-  body.workout .holdhint{grid-column:2;grid-row:2;align-self:end;margin:0}
-  body.workout .pill{font-size:1.8rem}
-  body.workout .sndbtn{width:36px;height:36px}
   body.workout .next{margin:6px -18px -10px;padding:5px 18px 7px;font-size:1.15rem}
   body.workout .next .k{display:inline;margin-right:6px}
-  body.workout .wrap{max-width:none;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(200px,1fr);grid-template-rows:auto 1fr auto;column-gap:16px;row-gap:10px}
-  body.workout .clock{grid-column:1;grid-row:1 / span 3;padding-block:10px}
-  body.workout .digits{font-size:clamp(5rem,46vh,15rem);padding-block:2px}
   body.workout .awake{grid-column:2;grid-row:1;margin:0}
   body.workout .note{grid-column:2;grid-row:2;margin:0;align-self:start}
+  body.workout .holdhint{grid-column:2;grid-row:2;align-self:end;margin:0}
   body.workout .controls{grid-column:2;grid-row:3;grid-template-columns:1fr 1fr 1fr}
   body.workout #play{grid-column:1 / -1;grid-row:1;height:96px}
   body.workout .controls button{height:64px}
@@ -532,7 +533,10 @@ function putPhase(c){if(shown.get('--phase')!==c){shown.set('--phase',c);$('cloc
 function putFill(f){const v=`translateY(${((1-f)*100).toFixed(2)}%)`;if(shown.get('fill')!==v){shown.set('fill',v);$('fill').style.transform=v}}
 function render(){
   const wk=!idle()&&plan.length>0;
-  if(document.body.classList.contains('workout')!==wk)document.body.classList.toggle('workout',wk);
+  if(document.body.classList.contains('workout')!==wk){
+    document.body.classList.toggle('workout',wk);document.documentElement.classList.toggle('lock',wk);
+    if(wk)scrollTo(0,0);
+  }
   put('hint',wk?(running?'Tap the clock to pause':'Paused · tap the clock to resume'):'');
   renderNote();
   if(!plan.length){put('digits','0');putSize(0);put('phase','No plan');put('tags','');setNext(null);return}
@@ -675,9 +679,10 @@ const vid=$('nosleep');vid.muted=true;vid.setAttribute('webkit-playsinline','');
 let awakeMode='',needWake=false;
 function setAwake(mode){
   awakeMode=mode;const el=$('awake');
-  if(!mode){el.hidden=true;return}
+  document.body.classList.toggle('asleep',mode==='off');   // one line, in place of the hold hint and the reload note
+  if(mode!=='off'){el.hidden=true;return}   // shown only when the screen may sleep (the user, 20 Nov)
   el.hidden=false;el.className='awake '+(mode==='off'?'off':'on');
-  el.textContent=mode==='lock'?'Screen will stay on':mode==='video'?'Screen will stay on (backup method)':'Screen may sleep. Set Auto-Lock to Never for this workout.';
+  el.textContent='Screen may sleep: set Auto-Lock to Never';
 }
 function startVideo(){
   try{
@@ -727,6 +732,13 @@ function showSound(){
   b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+SPEAKER+(soundOn?'<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>':'<path d="M16 9l5 6M21 9l-5 6"/>')+'</svg>';
 }
 function toggleSound(){soundOn=!soundOn;showSound();store('ic-sound',soundOn?'1':'0');if(soundOn)initAudio()}
+/* No scrolling or zooming during a workout: a pinch, drag or double tap from a sweaty hand shouldn't move the
+   clock. touch-action covers most of it; these cover iOS's pinch gesture and rubber-band scrolling. */
+const noGesture=e=>{if(document.body.classList.contains('workout'))e.preventDefault()};
+document.addEventListener('touchmove',noGesture,{passive:false});
+for(const ev of ['gesturestart','gesturechange'])document.addEventListener(ev,noGesture);
+/* The Next panel's height, so the draining level stops at its top edge. */
+new ResizeObserver(()=>$('clock').style.setProperty('--nh',$('next').offsetHeight+'px')).observe($('next'));
 $('sound').onclick=toggleSound;
 $('sound2').onclick=e=>{e.stopPropagation();toggleSound()};   // the clock behind it pauses on a tap
 showSound();
@@ -782,12 +794,14 @@ function restoreRun(r){
   markList();render();saveRun(true);
   return true;
 }
+/* During a workout the page can't scroll, so the note is one line and takes the place of the hold hint. */
 function renderNote(){
-  const el=$('note');
+  const el=$('note'),wk=document.body.classList.contains('workout');
+  document.body.classList.toggle('noted',!!reloads);
   if(!reloads){if(!el.hidden)el.hidden=true;return}
-  let t=`The app reloaded ${reloads===1?'once':reloads+' times'} during this workout (last at ${reloadAt}) and picked up where you were.`;
-  const mute=running&&soundOn&&!audioOk();
-  if(mute)t+=' Tap here to bring the sound back.';
+  const n=reloads===1?'once':reloads+' times',mute=running&&soundOn&&!audioOk();
+  let t=wk?`Reloaded ${n} (last ${reloadAt}) and resumed`:`The app reloaded ${n} during this workout (last at ${reloadAt}) and picked up where you were.`;
+  if(mute)t+=wk?' · Tap here for sound':' Tap here to bring the sound back.';
   el.classList.toggle('tap',mute);
   if(el.hidden)el.hidden=false;
   if(el.textContent!==t)el.textContent=t;
