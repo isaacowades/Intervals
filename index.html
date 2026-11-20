@@ -279,16 +279,31 @@ function splitTop(t){
 function words(t){return (t.match(/[a-z][a-z'-]*/g)||[]).filter(w=>!FILLER.has(w))}
 function hasDesc(t){return words(t).length>0||RESTW.test(t)}
 /* Tidies obvious slips before parsing: doubled or stray dashes and slashes ("4--10-5", "6-10-8//4-10-8",
-   "6-10-8-/4"), spaces around a dash between numbers, and separators left at either end. `read` is the tidied
-   text when something in the middle changed, so the page can say how it was read; trailing slips are left
-   unmentioned, since they appear on every keystroke while typing. */
+   "6-10-8-/4"), spaces around a dash between numbers, slips in a group's repeat ("30::2", "30 : 2", "30-:2",
+   "30 x2", "30xx2", and "30;2", since ; sits next to : on the iPhone's number keys), and separators or a
+   half-typed repeat left at either end. `read` is the tidied text when something in the middle changed, so the
+   page can say how it was read; trailing slips are left unmentioned, since they appear on every keystroke. */
+const AFTER_GROUP='(?<=-\\d+(?::\\d{1,2})?(?:\\.\\d+)?[sm]?)';   // just after the last number of a dash group
 function tidy(raw){
   const orig=String(raw).replace(/[–—]/g,'-');
   let s=orig.replace(/\/(?:\s*\/)+/g,'/').replace(/-+\s*\//g,'/').replace(/\/\s*-+/g,'/')
-    .replace(/(\d)\s*(?:-\s*)+(?=\d)/g,'$1-');
+    .replace(/(\d)\s*(?:-\s*)+(?=\d)/g,'$1-')
+    .replace(new RegExp(AFTER_GROUP+'\\s*-*\\s*:[\\s:-]*(?=\\d)','g'),':')
+    .replace(new RegExp(AFTER_GROUP+'\\s*(?:x\\s*)+(?=\\d)','gi'),'x')
+    .replace(new RegExp(AFTER_GROUP+'\\s*;\\s*(?=\\d(?![\\d.:-]))','g'),':');
   const changed=s!==orig;
-  s=s.replace(/^[\s\/,-]+|[\s\/,-]+$/g,'');
+  s=s.replace(/^[\s\/,-]+|[\s\/,:-]+$/g,'').replace(new RegExp(AFTER_GROUP+'\\s*x$','i'),'');
   return {text:s,read:changed?s:''};
+}
+/* Readings that are valid but easy to get by mistake inside a dash group: a colon time of 10 minutes or more
+   ("5-12-30:12" is a 30:12 rest, not 12 repeats) and a decimal that gets rounded ("30.2"). */
+function groupNotes(t){
+  const notes=[];
+  for(const g of t.matchAll(/(?<![\d:.])\d+-[\d:.smx-]+/gi)){
+    for(const m of g[0].matchAll(/(\d+):(\d\d)/g))if(+m[1]>=10)notes.push(`“${m[0]}” is ${+m[1]} min${+m[2]?` ${+m[2]} s`:''}. To repeat a group, use one digit (:2) or x (x12).`);
+    for(const m of g[0].matchAll(/(\d+\.\d+)(m?)/gi)){const v=parseFloat(m[1])*(m[2]?60:1);if(Math.round(v)!==v)notes.push(`“${m[1]}” is rounded to ${durTxt(Math.round(v))}.`)}
+  }
+  return notes;
 }
 function parseSeq(t,rep){let out=[];const descs=[];for(const seg of splitTop(t)){const r=parseSeg(seg,rep);out=out.concat(r);if(r.desc)descs.push(r.desc)}out.descs=descs;return out}
 function parseSeg(seg,rep){
@@ -385,7 +400,7 @@ function parsePlan(text){
     let secs=0;for(const x of intervals)for(const p of x.parts)if(p[0]===k)secs+=p[1];
     lines.push({text:describe(r.desc),secs});
   });
-  return {intervals,errors:rep.skipped,ignored:rep.ignored,read,lines,endRest};
+  return {intervals,errors:rep.skipped,ignored:rep.ignored,read,lines,endRest,notes:groupNotes(clean)};
 }
 //PARSER-END
 
@@ -441,6 +456,7 @@ function explainHTML(r){
   let h='<div class="explain">'+r.lines.map((l,i)=>`<span>${i?'then ':''}${esc(l.text)}</span><span class="t">${one?'':fmt(l.secs,true)}</span>`).join('')+'</div>';
   h+=`<div class="tot"><span>${iv.length} interval${iv.length>1?'s':''} · ${works} work${r.endRest?' · no rest at the end':''}</span><b>${fmt(total(iv),true)}</b></div>`;
   if(r.read)h+=`<div class="fix">Read as <b>${esc(r.read)}</b></div>`;
+  for(const n of r.notes)h+=`<div class="err">${esc(n)}</div>`;
   if(r.ignored.length)h+=`<div class="err">Ignored ${quoted(r.ignored)}: not part of the plan</div>`;
   if(r.errors.length)h+=`<div class="err">Skipped ${quoted(r.errors)}</div>`;
   return h;
