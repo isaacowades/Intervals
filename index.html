@@ -46,15 +46,20 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .entry{display:flex;flex-direction:column;gap:8px}
 .entry label{font:600 .78rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .inrow{display:flex;gap:8px}
-#plan{flex:1;min-width:0;font:500 1.25rem var(--font-body);padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+#plan{flex:1;min-width:0;font:500 1.25rem var(--font-body);font-kerning:none;font-variant-ligatures:none;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
 #plan:focus{border-color:var(--ink);outline:none}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 11px;font:500 .85rem var(--font-body);cursor:pointer;white-space:nowrap}
 .chip:hover{border-color:var(--muted)}
-.summary{font:500 .92rem var(--font-label);color:var(--muted);min-height:1.4em;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.summary{font:500 .92rem var(--font-label);color:var(--muted);min-height:1.4em;display:flex;flex-direction:column;gap:6px}
 .summary b{color:var(--ink);font-weight:600}
 .summary .err{color:var(--work)}
+.explain{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;font-size:1rem}
+.explain span{padding:5px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.explain .t{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tot{display:flex;justify-content:space-between;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.fix{color:var(--ink);background:color-mix(in srgb,var(--easy) 15%,transparent);border-radius:6px;padding:4px 8px}
 .loadnew{border:none;background:var(--ink);color:var(--bg);border-radius:6px;padding:3px 10px;font:600 .82rem var(--font-label);cursor:pointer}
 
 .clock{--phase:var(--prep);position:relative;overflow:hidden;background:var(--surface);border-radius:18px;border:1.5px solid var(--line);
@@ -153,7 +158,7 @@ body.workout .awake{margin-top:-4px}
 
   <form class="entry" id="form" autocomplete="off">
     <label for="plan">Workout</label>
-    <div class="inrow"><input id="plan" type="text" value="12x10s" spellcheck="false" enterkeyhint="go" aria-describedby="summary"><button type="button" class="savebtn" id="savebtn">Save</button></div>
+    <div class="inrow"><input id="plan" type="text" value="12x10s" spellcheck="false" autocorrect="off" autocapitalize="off" enterkeyhint="go" aria-describedby="summary"><button type="button" class="savebtn" id="savebtn">Save</button></div>
     <div class="saverow" id="saverow" hidden><input id="savename" type="text" placeholder="Name this routine" maxlength="40" enterkeyhint="done" aria-label="Routine name"><button type="button" id="saveok">Save</button><button type="button" class="ghost" id="savecancel">Cancel</button></div>
     <div class="summary" id="summary" aria-live="polite"></div>
     <div class="mine" id="mine" hidden>
@@ -252,13 +257,26 @@ function splitTop(t){
 }
 function words(t){return (t.match(/[a-z][a-z'-]*/g)||[]).filter(w=>!FILLER.has(w))}
 function hasDesc(t){return words(t).length>0||RESTW.test(t)}
-function parseSeq(t,errs){let out=[];for(const seg of splitTop(t))out=out.concat(parseSeg(seg,errs));return out}
-function parseSeg(seg,errs){
+/* Tidies obvious slips before parsing: doubled or stray dashes and slashes ("4--10-5", "6-10-8//4-10-8",
+   "6-10-8-/4"), spaces around a dash between numbers, and separators left at either end. `read` is the tidied
+   text when something in the middle changed, so the page can say how it was read; trailing slips are left
+   unmentioned, since they appear on every keystroke while typing. */
+function tidy(raw){
+  const orig=String(raw).replace(/[–—]/g,'-');
+  let s=orig.replace(/\/(?:\s*\/)+/g,'/').replace(/-+\s*\//g,'/').replace(/\/\s*-+/g,'/')
+    .replace(/(\d)\s*(?:-\s*)+(?=\d)/g,'$1-');
+  const changed=s!==orig;
+  s=s.replace(/^[\s\/,-]+|[\s\/,-]+$/g,'');
+  return {text:s,read:changed?s:''};
+}
+function parseSeq(t,rep){let out=[];const descs=[];for(const seg of splitTop(t)){const r=parseSeg(seg,rep);out=out.concat(r);if(r.desc)descs.push(r.desc)}out.descs=descs;return out}
+function parseSeg(seg,rep){
   let m=seg.match(/^(\d+)\s*(?:x|rounds?|sets?|times|circuits?|blocks?)?\s*(?:of\s*)?[(\[](.*)[)\]]\s*$/);
   if(!m){const m2=seg.match(/^[(\[](.*)[)\]]\s*x?\s*(\d+)\s*(?:x|rounds?|sets?|times)?\s*$/);if(m2)m=[0,m2[2],m2[1]]}
   if(m){
-    const n=Math.min(parseInt(m[1],10),200),inner=parseSeq(m[2],errs),res=[];
+    const n=Math.min(parseInt(m[1],10),200),inner=parseSeq(m[2],rep),res=[];
     for(let r=1;r<=n;r++)for(const it of inner)res.push({...it,tags:(n>1?[`Round ${r}/${n}`]:[]).concat(it.tags)});
+    if(inner.descs.length)res.desc={count:n,inner:inner.descs};
     return res;
   }
   const toks=[];
@@ -279,9 +297,11 @@ function parseSeg(seg,errs){
     const b=s.match(/(\d+(?:\.\d+)?)/);
     if(b){toks.push(Math.round(+b[1]));s=s.replace(b[0],' '+TOK+'a ')}
   }
-  if(!toks.length){errs.push(seg.trim());return[]}
+  if(!toks.length){rep.skipped.push(seg.trim());return[]}
   count=Math.max(1,Math.min(count,500));
-  const texts=s.split(new RegExp(TOK+'[a-z]'));
+  // Any number still left over was not used; say so rather than drop it ("4-1o-5", "4.10.5"), and keep its
+  // letters out of the interval's name.
+  const texts=s.split(new RegExp(TOK+'[a-z]')).map(t=>t.replace(/\S*\d\S*/g,m=>{rep.ignored.push(m);return ' '}));
   const before=hasDesc(texts[0]);
   const items=toks.map((secs,i)=>{
     const d=before?texts[i]:texts[i+1];
@@ -292,28 +312,59 @@ function parseSeg(seg,errs){
     items.forEach(x=>{if(x.slash&&!x.label)x.rest=true});
     if(items.length===2&&!items.some(x=>x.rest)&&!items[1].label)items[1].rest=true;
   }
-  const res=[];
-  for(let r=1;r<=count;r++)for(const it of items){
+  const kinds=items.map(it=>{
     const kind=it.rest?'rest':/^(warmup|cooldown)/.test(it.label)?'easy':'work';
     const label=it.rest?'Rest':it.label==='warmup'?'Warm-up':it.label==='cooldown'?'Cool-down':it.label?it.label.replace(/^\w/,c=>c.toUpperCase()):'Work';
-    res.push({secs:it.secs,kind,label,replace:!!it.replace,tags:count>1?[`Set ${r}/${count}`]:[]});
-  }
+    return {secs:it.secs,kind,label,replace:!!it.replace};
+  });
+  const res=[];
+  for(let r=1;r<=count;r++)for(const k of kinds)res.push({...k,tags:count>1?[`Set ${r}/${count}`]:[]});
+  res.desc={count,items:kinds};
   return res;
 }
+/* The plain-English reading shown under the box, one line per part of the plan, built from what was parsed
+   so it can't disagree with what will run. */
+function durTxt(s){
+  if(s<60)return s+'s';
+  if(s%3600===0)return s/3600+' h';
+  if(s%60===0&&s<3600)return s/60+' min';
+  const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=String(s%60).padStart(2,'0');
+  return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`;
+}
+function itemTxt(it){return durTxt(it.secs)+' '+(it.kind==='rest'?'rest':it.label.toLowerCase())}
+function describe(d){
+  if(d.inner){const t=d.inner.map(describe).join(', then ');return d.count>1?`${d.count} rounds of (${t})`:t}
+  const t=d.items.map(itemTxt).join(' · ');
+  return d.count>1?`${d.count} rounds · ${t}`:t;
+}
 function parsePlan(text){
-  const errs=[];
-  const segs=splitTop(normalize(text)).map(seg=>parseSeg(seg,errs));
-  const rep=segs.filter(r=>r.length>1&&r.some(x=>x.tags.length&&x.kind!=='rest'));
-  if(rep.length>1)rep.forEach((r,k)=>r.forEach(x=>{x.tags=[`Group ${k+1}/${rep.length}`].concat(x.tags)}));
-  let list=[].concat(...segs).filter(x=>x.secs>0);
+  const rep={skipped:[],ignored:[]};
+  const {text:clean,read}=tidy(text);
+  const segs=splitTop(normalize(clean)).map(seg=>parseSeg(seg,rep));
+  const grouped=segs.filter(r=>r.length>1&&r.some(x=>x.tags.length&&x.kind!=='rest'));
+  if(grouped.length>1)grouped.forEach((r,k)=>r.forEach(x=>{x.tags=[`Group ${k+1}/${grouped.length}`].concat(x.tags)}));
+  // `parts` records which part of the plan each second came from, so each explanation line can show its own time.
+  const list=[];
+  segs.forEach((r,k)=>r.forEach(x=>{if(x.secs>0)list.push({...x,parts:[[k,x.secs]]})}));
   const merged=[];
   for(const it of list){
     const last=merged[merged.length-1];
-    if(last&&last.kind==='rest'&&it.kind==='rest'){last.secs=it.replace?it.secs:last.secs+it.secs;if(it.tags.length)last.tags=it.tags}
+    if(last&&last.kind==='rest'&&it.kind==='rest'){
+      if(it.replace){last.secs=it.secs;last.parts=it.parts}else{last.secs+=it.secs;last.parts=last.parts.concat(it.parts)}
+      if(it.tags.length)last.tags=it.tags;
+    }
     else merged.push({...it,tags:[...it.tags]});
   }
-  while(merged.length&&merged[merged.length-1].kind==='rest')merged.pop();
-  return {intervals:merged.slice(0,3000),errors:errs};
+  let endRest=false;
+  while(merged.length&&merged[merged.length-1].kind==='rest'){merged.pop();endRest=true}
+  const intervals=merged.slice(0,3000);
+  const lines=[];
+  segs.forEach((r,k)=>{
+    if(!r.desc)return;
+    let secs=0;for(const x of intervals)for(const p of x.parts)if(p[0]===k)secs+=p[1];
+    lines.push({text:describe(r.desc),secs});
+  });
+  return {intervals,errors:rep.skipped,ignored:rep.ignored,read,lines,endRest};
 }
 //PARSER-END
 
@@ -342,27 +393,35 @@ function buildPlan(){
 }
 function idle(){return finished||(idx===0&&elapsed===0&&!running)}
 
+let info=null,pendingInfo=null;   // the parse behind `base` (and `pending`), for the explanation
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function quoted(list){return '“'+list.map(esc).join('”, “')+'”'}
 function applyText(text,force){
-  const {intervals,errors}=parsePlan(text);
+  const r=parsePlan(text);
   const sum=$('summary');
-  if(!intervals.length){
-    sum.innerHTML=text.trim()?`<span class="err">Couldn't read that. Try something like 12x10s or 8x20s/10s.</span>`:'Type a workout above.';
+  if(!r.intervals.length){
+    sum.innerHTML=text.trim()?`<div class="err">Couldn't read that. Try something like 12x10s or 6-10-8/4-10-8.</div>`:'Type a workout above.';
     return;
   }
   if(!force&&!idle()){
-    pending=intervals;pendingText=text;
-    sum.innerHTML=`<span>New plan ready: <b>${intervals.length}</b> intervals, <b>${fmt(total(intervals),true)}</b>.</span><button type="button" class="loadnew" id="loadnew">Load it</button>`;
-    $('loadnew').onclick=()=>{base=pending;baseText=pendingText;pending=null;resetTimer();renderSummary([])};
+    pending=r.intervals;pendingText=text;pendingInfo=r;
+    sum.innerHTML=`<div class="tot"><span>New plan ready: <b>${r.intervals.length}</b> intervals, <b>${fmt(total(r.intervals),true)}</b>.</span><button type="button" class="loadnew" id="loadnew">Load it</button></div>`;
+    $('loadnew').onclick=()=>{loadPending();resetTimer()};
     return;
   }
-  base=intervals;baseText=text;pending=null;
+  base=r.intervals;baseText=text;info=r;pending=null;
   resetTimer();
-  renderSummary(errors);
+  renderSummary();
 }
-function renderSummary(errors){
-  const works=base.filter(x=>x.kind==='work').length;
-  let h=`<span><b>${base.length}</b> interval${base.length>1?'s':''}</span><span><b>${works}</b> work</span><span><b>${fmt(total(base),true)}</b> total</span>`;
-  if(errors.length)h+=`<span class="err">Skipped: “${errors.map(e=>e.replace(/[<>&]/g,'')).join('”, “')}”</span>`;
+function loadPending(){base=pending;baseText=pendingText;info=pendingInfo;pending=null;renderSummary()}
+function renderSummary(){
+  const r=info;if(!r)return;
+  const works=base.filter(x=>x.kind==='work').length,one=r.lines.length===1;
+  let h='<div class="explain">'+r.lines.map((l,i)=>`<span>${i?'then ':''}${esc(l.text)}</span><span class="t">${one?'':fmt(l.secs,true)}</span>`).join('')+'</div>';
+  h+=`<div class="tot"><span>${base.length} interval${base.length>1?'s':''} · ${works} work${r.endRest?' · no rest at the end':''}</span><b>${fmt(total(base),true)}</b></div>`;
+  if(r.read)h+=`<div class="fix">Read as <b>${esc(r.read)}</b></div>`;
+  if(r.ignored.length)h+=`<div class="err">Ignored ${quoted(r.ignored)}: not part of the plan</div>`;
+  if(r.errors.length)h+=`<div class="err">Skipped ${quoted(r.errors)}</div>`;
   $('summary').innerHTML=h;
 }
 
@@ -579,7 +638,7 @@ $('note').addEventListener('click',()=>{initAudio();renderNote()});   // a click
 /* ---------- Wiring ---------- */
 $('play').onclick=()=>running?pause():start();
 $('clock').addEventListener('click',()=>{if(running)pause();else if(plan.length)start()});
-$('reset').onclick=()=>{if(pending){base=pending;baseText=pendingText;pending=null;renderSummary([])}resetTimer()};
+$('reset').onclick=()=>{if(pending)loadPending();resetTimer()};
 $('prev').onclick=()=>jump(elapsed>2000||idx===0||finished?(finished?plan.length-1:idx):idx-1);
 $('nextbtn').onclick=()=>jump(idx+1);
 $('sound').onclick=e=>{soundOn=!soundOn;e.currentTarget.setAttribute('aria-pressed',soundOn);e.currentTarget.textContent=soundOn?'Sound on':'Sound off';store('ic-sound',soundOn?'1':'0');if(soundOn)initAudio()};
