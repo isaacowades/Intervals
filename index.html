@@ -39,17 +39,15 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-siz
 .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 h1{font-family:var(--font-display);font-weight:800;font-size:1.6rem;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1}
-.iconbtn{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 12px;font:600 .85rem var(--font-label);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;gap:6px;align-items:center}
-.iconbtn[aria-pressed="false"]{color:var(--muted)}
 button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid var(--work);outline-offset:2px}
 
 .entry{display:flex;flex-direction:column;gap:8px}
-.entry label{font:600 .78rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.entry label{font:500 .95rem var(--font-label);color:var(--muted)}
 .inrow{display:flex;gap:8px}
 #plan{flex:1;min-width:0;font:500 1.25rem var(--font-body);font-kerning:none;font-variant-ligatures:none;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
 #plan:focus{border-color:var(--ink);outline:none}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.trylabel{margin:10px 0 6px}
 .chip{flex:none;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 11px;font:500 .85rem var(--font-body);cursor:pointer;white-space:nowrap}
 .chip:hover{border-color:var(--muted)}
 .summary{font:500 .92rem var(--font-label);color:var(--muted);min-height:1.4em;display:flex;flex-direction:column;gap:6px}
@@ -69,18 +67,20 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .pill{background:var(--phase);color:var(--surface);font:600 .95rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:6px;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .count{font:600 .95rem var(--font-label);font-variant-numeric:tabular-nums;color:var(--muted)}
 .toprow .right{display:flex;align-items:center;gap:10px}
-.sndbtn{display:none;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.sndbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sndbtn{display:flex;align-items:center;justify-content:center;width:42px;height:42px;margin:-8px -10px -8px 0;padding:0;border:none;border-radius:50%;background:none;color:var(--ink);cursor:pointer}
+.sndbtn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sndbtn svg .body{fill:currentColor;stroke:none}
 .sndbtn[aria-pressed="false"]{color:var(--muted)}
 .digits{font-family:var(--font-display);font-weight:800;font-size:clamp(7rem,36vw,13rem);line-height:.9;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.01em;padding-block:10px 4px}
 .tags{text-align:center;font:600 1.15rem var(--font-label);letter-spacing:.04em;min-height:1.5em;font-variant-numeric:tabular-nums}
 .next{text-align:center;color:var(--muted);font:500 .95rem var(--font-label);min-height:1.4em}
 .next b{color:var(--ink);font-weight:600}
 .next .k::after{content:":"}
-.strip{display:flex;gap:2px;height:10px;margin-top:10px;border-radius:3px;overflow:hidden}
-.strip i{display:block;min-width:2px;background:var(--c);opacity:.35}
-.strip i.done{opacity:.9}
-.strip i.cur{opacity:1;box-shadow:inset 0 0 0 1.5px var(--ink)}
+.strip{display:flex;align-items:flex-end;gap:1px;height:40px;margin-top:10px;overflow:hidden;border-bottom:1px solid var(--line)}
+.strip i{display:block;min-width:1px;height:var(--h);background:var(--c);border-radius:2px 2px 0 0}
+.strip i.done{opacity:.3}
+.strip i.cur{box-shadow:inset 0 0 0 2px var(--ink)}
+.strip.profile{height:56px;margin-top:2px}
 .totals{display:flex;justify-content:space-between;font:500 .85rem var(--font-label);color:var(--muted);font-variant-numeric:tabular-nums}
 
 .controls{display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:8px}
@@ -89,6 +89,10 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .controls button svg{width:22px;height:22px;fill:currentColor}
 #play{background:var(--ink);color:var(--bg);border-color:var(--ink);font-size:1.1rem}
 .controls button:disabled{opacity:.4;cursor:default}
+.startbar{display:flex;justify-content:space-between;align-items:center;width:100%;border:none;border-radius:14px;padding:14px 20px;background:var(--ink);color:var(--bg);font:600 1.15rem var(--font-label);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.startbar .st{display:flex;align-items:baseline;gap:8px}
+.startbar b{font:800 1.9rem/1 var(--font-display);letter-spacing:.01em}
+.startbar small{font:500 .85rem var(--font-label);text-transform:none;letter-spacing:0;opacity:.7}
 .opts{display:flex;gap:16px;flex-wrap:wrap;font:500 .9rem var(--font-label);color:var(--muted)}
 .opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
 .awake{display:flex;align-items:center;gap:8px;font:600 .9rem var(--font-label);letter-spacing:.02em;margin-top:-8px}
@@ -100,7 +104,11 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .holdhint{display:none;text-align:center;font:500 .85rem var(--font-label);color:var(--muted);margin-top:-6px}
 #nosleep{position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:.01;pointer-events:none}
 
-.list h2{font:600 .78rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.fold>summary{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-top:1px solid var(--line);font:600 1rem var(--font-label);color:var(--ink);cursor:pointer;list-style:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+.fold[open]>summary::after{transform:rotate(45deg)}
+.fold>p{margin:0 0 8px}
 .list ol{list-style:none;margin:0;padding:0;max-height:300px;overflow-y:auto;border-top:1px solid var(--line)}
 .list li{display:grid;grid-template-columns:2.2em 10px 1fr auto;gap:10px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);cursor:pointer;font-variant-numeric:tabular-nums}
 .list li:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -120,7 +128,7 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .saverow button.ghost{background:transparent;color:var(--muted)}
 .mine{display:flex;flex-direction:column;gap:6px}
 .minehead{display:flex;justify-content:space-between;align-items:baseline}
-.minehead span{font:600 .78rem var(--font-label);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.minehead span{font:500 .95rem var(--font-label);color:var(--muted)}
 .linkbtn{background:none;border:none;padding:2px 0;color:var(--muted);font:600 .82rem var(--font-label);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .saved{display:flex;gap:6px;flex-wrap:wrap}
 .saved .chip{display:flex;gap:6px;align-items:center;background:var(--surface)}
@@ -144,7 +152,8 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 /* Workout mode: once a workout has started, only the clock and controls remain. No header; the phase as large
    coloured text with a sound button in the corner; the number sized by its format so it never jumps
    mid-interval; the next interval in a panel along the bottom of the clock; Reset only after a one-second hold. */
-body.workout header,body.workout .entry,body.workout .list,body.workout .help,body.workout .opts{display:none}
+body.workout header,body.workout .entry,body.workout .list,body.workout .help,body.workout .opts,body.workout .startbar{display:none}
+body:not(.workout) .clock,body:not(.workout) .controls{display:none}
 body.workout{padding-block:12px;touch-action:none}   /* no pan or double-tap zoom; taps still work */
 html.lock,html.lock body{overflow:hidden;overscroll-behavior:none}
 body.workout .fill{bottom:var(--nh,0px)}   /* the level drains to the top of the Next panel, not behind it */
@@ -152,20 +161,22 @@ body.workout .wrap{min-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) 
 body.workout .clock{flex:1;justify-content:center;cursor:pointer;container-type:inline-size}
 body.workout .toprow{margin-bottom:auto}
 body.workout .pill{background:none;color:var(--phase);padding:0;border-radius:0;font:800 clamp(2rem,10vw,3.2rem)/1 var(--font-display);letter-spacing:.04em;max-width:75%}
-body.workout .sndbtn{display:flex}
 /* Sized to fill about 90% of the clock's width (cqi) for the widest text of each format, measured in this font:
    "44" is 0.94 em wide, "9:59" 1.62, "59:59" 2.08, "1:00:00" 2.77; capped by screen height. */
-body.workout .digits.s{font-size:min(96cqi,40dvh)}
+body.workout .digits.s{font-size:min(96cqi,37dvh)}
 body.workout .digits.m{font-size:min(55cqi,30dvh)}
 body.workout .digits.mm{font-size:min(43cqi,24dvh)}
 body.workout .digits.h{font-size:min(32cqi,19dvh)}
 body.workout .tags{font-size:1.45rem}
-body.workout .totals{margin-top:auto}
+body.workout .strip{height:30px;margin-top:6px}
+body.workout .totals{margin-top:auto;justify-content:flex-end;font:600 1.3rem var(--font-label);color:var(--ink)}
+body.workout #elapsed{display:none}
 body.workout .next{order:10;margin:10px -18px -16px;padding:10px 18px 14px;text-align:left;color:var(--ink);font:600 1.7rem/1.2 var(--font-label);
   border-top:3px solid var(--nextc,var(--line));background:color-mix(in srgb,var(--nextc,var(--line)) 14%,var(--surface))}
 body.workout .next .k{display:block;font:600 .8rem var(--font-label);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 body.workout .next .k::after{content:none}
 body.workout .next .nt{color:var(--muted);font-variant-numeric:tabular-nums}
+body.workout .next:empty{display:none}
 body.workout .controls button{height:72px}
 body.workout #reset{background:linear-gradient(var(--work),var(--work)) left/0% 100% no-repeat,var(--surface)}
 body.workout #reset.holding{background-size:100% 100%,auto;transition:background-size 1s linear}
@@ -180,11 +191,13 @@ body.workout .awake{margin-top:-4px}
   body.workout .pill{font-size:1.8rem}
   body.workout .sndbtn{width:36px;height:36px}
   body.workout .digits{padding-block:2px}
-  body.workout .digits.s,body.workout .digits.m{font-size:clamp(5rem,42vh,15rem)}
+  body.workout .digits.s,body.workout .digits.m{font-size:clamp(5rem,36vh,15rem)}
+  body.workout .totals{font-size:1.05rem}
   body.workout .digits.mm{font-size:min(36vh,43cqi)}
   body.workout .digits.h{font-size:min(28vh,32cqi)}
   body.workout .next{margin:6px -18px -10px;padding:5px 18px 7px;font-size:1.15rem}
   body.workout .next .k{display:inline;margin-right:6px}
+  body.workout .strip{height:24px;margin-top:4px}
   body.workout .awake{grid-column:2;grid-row:1;margin:0}
   body.workout .note{grid-column:2;grid-row:2;margin:0;align-self:start}
   body.workout .holdhint{grid-column:2;grid-row:2;align-self:end;margin:0}
@@ -200,13 +213,14 @@ body.workout .awake{margin-top:-4px}
 <div class="wrap">
   <header>
     <h1>Interval Clock</h1>
-    <button class="iconbtn" id="sound" aria-pressed="true" type="button">Sound on</button>
+    <button class="sndbtn" id="sound" aria-pressed="true" aria-label="Sound on" type="button"></button>
   </header>
 
   <form class="entry" id="form" autocomplete="off">
     <label for="plan">Workout</label>
     <div class="inrow"><input id="plan" type="text" value="12x10s" spellcheck="false" autocorrect="off" autocapitalize="off" enterkeyhint="go" aria-describedby="summary"><button type="button" class="savebtn" id="savebtn">Save</button></div>
     <div class="saverow" id="saverow" hidden><input id="savename" type="text" placeholder="Name this routine" maxlength="40" enterkeyhint="done" aria-label="Routine name"><button type="button" id="saveok">Save</button><button type="button" class="ghost" id="savecancel">Cancel</button></div>
+    <div class="strip profile" id="profile" aria-hidden="true"></div>
     <div class="summary" id="summary" aria-live="polite"></div>
     <div class="mine" id="mine" hidden>
       <div class="minehead"><span>My routines</span><button type="button" class="linkbtn" id="manage">Edit</button></div>
@@ -219,8 +233,6 @@ body.workout .awake{margin-top:-4px}
         <div class="edbtns"><button type="button" id="edsave">Save</button><button type="button" class="ghost" id="edcancel">Cancel</button><button type="button" class="danger" id="eddel">Delete</button></div>
       </div>
     </div>
-    <div class="minehead"><span>Examples</span></div>
-    <div class="chips" id="chips"></div>
   </form>
 
   <section class="clock" id="clock" aria-label="Timer">
@@ -243,17 +255,22 @@ body.workout .awake{margin-top:-4px}
   <div class="holdhint" id="holdhint">Hold ↺ for 1 s to reset</div>
   <div class="awake" id="awake" role="status" hidden></div>
   <div class="note" id="note" role="status" hidden></div>
+  <button type="button" class="startbar" id="startbar"><span>Start</span><span class="st"><b id="sttime">0:00</b><small id="stlead"></small></span></button>
   <div class="opts">
     <label><input type="checkbox" id="leadin" checked> 5-second lead-in</label>
     <label><input type="checkbox" id="voice"> Call out phase names</label>
   </div>
 
-  <section class="list">
-    <h2>Plan</h2>
+  <details class="list fold">
+    <summary id="listsum">All intervals</summary>
     <ol id="list"></ol>
-  </section>
+  </details>
 
-  <p class="help">Write it however you like. <code>12x10s</code> is 12 sets of 10 seconds. Add rest with a slash or words: <code>8x20s/10s</code>, <code>10 rounds of 45 seconds work 15 seconds rest</code>. Chain parts with commas or "then": <code>5m warmup, 6x1:30/30s, 3m cooldown</code>. Program a routine as rounds-work-rest groups split by slashes: <code>6-10-8/4-10-8/2-10-8</code> is 6 rounds of 10s work and 8s rest, then 4 rounds, then 2. Add a fourth number for a longer rest after a group: <code>6-10-8-60/4-10-8</code>. Repeat a group with a colon: <code>5-12-30:2/4-2-10:4</code> does the first group twice and the second four times; for 10 or more use x: <code>5-12-30x12</code>. Repeat a group with parentheses: <code>3x(8x20s/10s, 1m rest)</code>. Name moves: <code>plank 1m, rest 15s, side plank 30s</code>. Shortcuts: <code>tabata</code>, <code>emom 10</code>. Tap Save to keep a routine on this phone, and Edit above your routines to rename, change or delete one. Once a workout starts, the screen switches to a large clock; tap it to pause, and hold Reset for a second to get back to editing. Tap any interval in the plan to jump to it.</p>
+  <details class="help fold"><summary>How to write a workout</summary>
+  <p>Write it however you like. <code>12x10s</code> is 12 sets of 10 seconds. Add rest with a slash or words: <code>8x20s/10s</code>, <code>10 rounds of 45 seconds work 15 seconds rest</code>. Chain parts with commas or "then": <code>5m warmup, 6x1:30/30s, 3m cooldown</code>. Program a routine as rounds-work-rest groups split by slashes: <code>6-10-8/4-10-8/2-10-8</code> is 6 rounds of 10s work and 8s rest, then 4 rounds, then 2. Add a fourth number for a longer rest after a group: <code>6-10-8-60/4-10-8</code>. Repeat a group with a colon: <code>5-12-30:2/4-2-10:4</code> does the first group twice and the second four times; for 10 or more use x: <code>5-12-30x12</code>. Repeat a group with parentheses: <code>3x(8x20s/10s, 1m rest)</code>. Name moves: <code>plank 1m, rest 15s, side plank 30s</code>. Shortcuts: <code>tabata</code>, <code>emom 10</code>. Tap Save to keep a routine on this phone, and Edit above your routines to rename, change or delete one. Once a workout starts, the screen switches to a large clock; tap it to pause, and hold Reset for a second to get back to editing. Open All intervals and tap one to start from it.</p>
+  <p class="trylabel">Try one:</p>
+  <div class="chips" id="chips"></div>
+  </details>
 </div>
 
 <video id="nosleep" muted playsinline loop preload="auto" aria-hidden="true" tabindex="-1" src="data:video/mp4;base64,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"></video>
@@ -499,9 +516,16 @@ function explainHTML(r){
   return h;
 }
 
+/* The workout profile (on the main screen and in the clock): one bar per interval, its width the interval's
+   length and its height the effort, so the shape of the plan shows at a glance. */
+const EFFORT={work:'100%',easy:'66%',prep:'45%',rest:'34%'};
 function renderList(){
-  const ol=$('list'),strip=$('strip');
-  ol.innerHTML='';strip.innerHTML='';
+  const ol=$('list'),strip=$('strip'),prof=$('profile');
+  ol.innerHTML='';strip.innerHTML='';prof.innerHTML='';
+  $('listsum').textContent=`All ${base.length} interval${base.length===1?'':'s'}`;
+  $('sttime').textContent=fmt(total(base),true);
+  $('stlead').textContent=$('leadin').checked&&base.length?'+5s lead-in':'';
+  prof.hidden=!plan.length;
   plan.forEach((it,i)=>{
     const li=document.createElement('li');
     li.style.setProperty('--c',COLORS[it.kind]);
@@ -510,8 +534,8 @@ function renderList(){
     if(it.tags.length){const sm=document.createElement('small');sm.textContent=it.tags.join(' · ');lb.appendChild(sm)}
     li.onclick=()=>jump(i);
     ol.appendChild(li);
-    const b=document.createElement('i');b.style.setProperty('--c',COLORS[it.kind]);b.style.flexGrow=it.secs;
-    strip.appendChild(b);
+    const b=document.createElement('i');b.style.setProperty('--c',COLORS[it.kind]);b.style.setProperty('--h',EFFORT[it.kind]);b.style.flexGrow=it.secs;
+    strip.appendChild(b);prof.appendChild(b.cloneNode());
   });
   markList();
 }
@@ -532,12 +556,13 @@ function put(id,v){if(shown.get(id)!==v){shown.set(id,v);$(id).textContent=v}}
 function putPhase(c){if(shown.get('--phase')!==c){shown.set('--phase',c);$('clock').style.setProperty('--phase',c)}}
 function putFill(f){const v=`translateY(${((1-f)*100).toFixed(2)}%)`;if(shown.get('fill')!==v){shown.set('fill',v);$('fill').style.transform=v}}
 function render(){
-  const wk=!idle()&&plan.length>0;
+  const wk=plan.length>0&&(finished||!idle());   // the Done screen stays on the workout layout
   if(document.body.classList.contains('workout')!==wk){
     document.body.classList.toggle('workout',wk);document.documentElement.classList.toggle('lock',wk);
     if(wk)scrollTo(0,0);
   }
-  put('hint',wk?(running?'Tap the clock to pause':'Paused · tap the clock to resume'):'');
+  put('hint',wk&&!running&&!finished?'Paused · tap the clock to resume':'');
+  put('holdhint',finished?'Tap ↺ to go back to the plan':'Hold ↺ for 1 s to reset');
   renderNote();
   if(!plan.length){put('digits','0');putSize(0);put('phase','No plan');put('tags','');setNext(null);return}
   if(finished){
@@ -545,7 +570,7 @@ function render(){
     put('phase','Done');put('digits',fmt(total(base),true));putSize(Math.max(60,total(base)));
     put('tags','Workout complete');setNext(null,'');
     put('count',`${plan.length}/${plan.length}`);
-    put('elapsed',fmt(total(plan),true)+' done');put('remaining','0:00 left');
+    put('elapsed',fmt(total(plan),true)+' done');put('remaining','');
     put('play','Again');return;
   }
   const it=plan[idx],rem=it.secs-elapsed/1000;
@@ -725,11 +750,10 @@ $('prev').onclick=()=>jump(elapsed>2000||idx===0||finished?(finished?plan.length
 $('nextbtn').onclick=()=>jump(idx+1);
 /* Two sound buttons, one setting: "Sound on" in the header, and an icon in the clock's corner during a workout,
    when the header is hidden. */
-const SPEAKER='<path d="M4 9h3l5-4v14l-5-4H4z"/>';
+const SPEAKER='<path class="body" d="M3 9h4l5-4.5v15L7 15H3z"/>';
 function showSound(){
-  $('sound').setAttribute('aria-pressed',soundOn);$('sound').textContent=soundOn?'Sound on':'Sound off';
-  const b=$('sound2');b.setAttribute('aria-pressed',soundOn);b.setAttribute('aria-label',soundOn?'Sound on':'Sound off');
-  b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+SPEAKER+(soundOn?'<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>':'<path d="M16 9l5 6M21 9l-5 6"/>')+'</svg>';
+  const svg='<svg viewBox="0 0 24 24" aria-hidden="true">'+SPEAKER+(soundOn?'<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>':'<path d="M16 9l5 6M21 9l-5 6"/>')+'</svg>';
+  for(const b of [$('sound'),$('sound2')]){b.setAttribute('aria-pressed',soundOn);b.setAttribute('aria-label',soundOn?'Sound on':'Sound off');b.innerHTML=svg}
 }
 function toggleSound(){soundOn=!soundOn;showSound();store('ic-sound',soundOn?'1':'0');if(soundOn)initAudio()}
 /* No scrolling or zooming during a workout: a pinch, drag or double tap from a sweaty hand shouldn't move the
@@ -747,13 +771,15 @@ showSound();
 let holdT=null;
 function doReset(){if(pending)loadPending();resetTimer()}
 function endHold(){clearTimeout(holdT);holdT=null;$('reset').classList.remove('holding')}
+const holdNeeded=()=>document.body.classList.contains('workout')&&!finished;
 $('reset').addEventListener('pointerdown',()=>{
-  if(!document.body.classList.contains('workout'))return;
+  if(!holdNeeded())return;
   $('reset').classList.add('holding');holdT=setTimeout(()=>{endHold();doReset()},1000);
 });
 for(const ev of ['pointerup','pointerleave','pointercancel'])$('reset').addEventListener(ev,endHold);
 $('reset').addEventListener('contextmenu',e=>e.preventDefault());
-$('reset').onclick=e=>{if(!document.body.classList.contains('workout')||e.detail===0)doReset()};
+$('reset').onclick=e=>{if(!holdNeeded()||e.detail===0)doReset()};
+$('startbar').onclick=start;
 $('leadin').onchange=()=>{store('ic-lead',$('leadin').checked?'1':'0');if(idle())resetTimer()};
 $('voice').onchange=()=>store('ic-voice',$('voice').checked?'1':'0');
 let deb;
