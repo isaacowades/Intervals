@@ -118,8 +118,19 @@ button:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid v
 .saved{display:flex;gap:6px;flex-wrap:wrap}
 .saved .chip{display:flex;gap:6px;align-items:center;background:var(--surface)}
 .saved .chip.match{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.saved .chip .x{display:none;color:var(--work);font-weight:600}
-.saved.manage .chip .x{display:inline}
+.saved .chip .ed{display:none;color:var(--muted)}
+.saved.manage .chip .ed{display:inline}
+.saved .chip.editing{border-color:var(--ink);background:color-mix(in srgb,var(--ink) 8%,var(--surface))}
+.edhint{margin:0;font:500 .85rem var(--font-label);color:var(--muted)}
+.editor{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.editor input{font:500 1rem var(--font-body);padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.editor input:focus{border-color:var(--ink);outline:none}
+#edtext{font-size:1.1rem;font-kerning:none;font-variant-ligatures:none}
+.edbtns{display:flex;gap:8px;margin-top:4px}
+.edbtns button{border:1.5px solid var(--ink);border-radius:8px;padding:9px 14px;font:600 .9rem var(--font-label);cursor:pointer;background:var(--ink);color:var(--bg)}
+.edbtns .ghost{background:transparent;color:var(--muted);border-color:transparent}
+.edbtns .danger{margin-left:auto;background:transparent;color:var(--work);border-color:var(--work)}
+.edbtns .danger.armed{background:var(--work);color:var(--surface)}
 .hint{text-align:center;font:500 .85rem var(--font-label);color:var(--muted);min-height:1.2em}
 .clock{-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 
@@ -164,6 +175,13 @@ body.workout .awake{margin-top:-4px}
     <div class="mine" id="mine" hidden>
       <div class="minehead"><span>My routines</span><button type="button" class="linkbtn" id="manage">Edit</button></div>
       <div class="saved" id="saved"></div>
+      <p class="edhint" id="edhint" hidden>Tap a routine to change or delete it.</p>
+      <div class="editor" id="editor" hidden>
+        <label for="edname">Name</label><input id="edname" type="text" maxlength="40" enterkeyhint="next">
+        <label for="edtext">Shorthand</label><input id="edtext" type="text" spellcheck="false" autocorrect="off" autocapitalize="off" enterkeyhint="done">
+        <div class="summary" id="edsum" aria-live="polite"></div>
+        <div class="edbtns"><button type="button" id="edsave">Save</button><button type="button" class="ghost" id="edcancel">Cancel</button><button type="button" class="danger" id="eddel">Delete</button></div>
+      </div>
     </div>
     <div class="minehead"><span>Examples</span></div>
     <div class="chips" id="chips"></div>
@@ -198,7 +216,7 @@ body.workout .awake{margin-top:-4px}
     <ol id="list"></ol>
   </section>
 
-  <p class="help">Write it however you like. <code>12x10s</code> is 12 sets of 10 seconds. Add rest with a slash or words: <code>8x20s/10s</code>, <code>10 rounds of 45 seconds work 15 seconds rest</code>. Chain parts with commas or "then": <code>5m warmup, 6x1:30/30s, 3m cooldown</code>. Program a routine as rounds-work-rest groups split by slashes: <code>6-10-8/4-10-8/2-10-8</code> is 6 rounds of 10s work and 8s rest, then 4 rounds, then 2. Add a fourth number for a longer rest after a group: <code>6-10-8-60/4-10-8</code>. Repeat a group with a colon: <code>5-12-30:2/4-2-10:4</code> does the first group twice and the second four times; for 10 or more use x: <code>5-12-30x12</code>. Repeat a group with parentheses: <code>3x(8x20s/10s, 1m rest)</code>. Name moves: <code>plank 1m, rest 15s, side plank 30s</code>. Shortcuts: <code>tabata</code>, <code>emom 10</code>. Tap Save to keep a routine on this phone. Once a workout starts, the screen switches to a large clock; tap it to pause, and press Reset to get back to editing. Tap any interval in the plan to jump to it.</p>
+  <p class="help">Write it however you like. <code>12x10s</code> is 12 sets of 10 seconds. Add rest with a slash or words: <code>8x20s/10s</code>, <code>10 rounds of 45 seconds work 15 seconds rest</code>. Chain parts with commas or "then": <code>5m warmup, 6x1:30/30s, 3m cooldown</code>. Program a routine as rounds-work-rest groups split by slashes: <code>6-10-8/4-10-8/2-10-8</code> is 6 rounds of 10s work and 8s rest, then 4 rounds, then 2. Add a fourth number for a longer rest after a group: <code>6-10-8-60/4-10-8</code>. Repeat a group with a colon: <code>5-12-30:2/4-2-10:4</code> does the first group twice and the second four times; for 10 or more use x: <code>5-12-30x12</code>. Repeat a group with parentheses: <code>3x(8x20s/10s, 1m rest)</code>. Name moves: <code>plank 1m, rest 15s, side plank 30s</code>. Shortcuts: <code>tabata</code>, <code>emom 10</code>. Tap Save to keep a routine on this phone, and Edit above your routines to rename, change or delete one. Once a workout starts, the screen switches to a large clock; tap it to pause, and press Reset to get back to editing. Tap any interval in the plan to jump to it.</p>
 </div>
 
 <video id="nosleep" muted playsinline loop preload="auto" aria-hidden="true" tabindex="-1" src="data:video/mp4;base64,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"></video>
@@ -417,15 +435,15 @@ function applyText(text,force){
   renderSummary();
 }
 function loadPending(){base=pending;baseText=pendingText;info=pendingInfo;pending=null;renderSummary()}
-function renderSummary(){
-  const r=info;if(!r)return;
-  const works=base.filter(x=>x.kind==='work').length,one=r.lines.length===1;
+function renderSummary(){if(info)$('summary').innerHTML=explainHTML(info)}
+function explainHTML(r){
+  const iv=r.intervals,works=iv.filter(x=>x.kind==='work').length,one=r.lines.length===1;
   let h='<div class="explain">'+r.lines.map((l,i)=>`<span>${i?'then ':''}${esc(l.text)}</span><span class="t">${one?'':fmt(l.secs,true)}</span>`).join('')+'</div>';
-  h+=`<div class="tot"><span>${base.length} interval${base.length>1?'s':''} · ${works} work${r.endRest?' · no rest at the end':''}</span><b>${fmt(total(base),true)}</b></div>`;
+  h+=`<div class="tot"><span>${iv.length} interval${iv.length>1?'s':''} · ${works} work${r.endRest?' · no rest at the end':''}</span><b>${fmt(total(iv),true)}</b></div>`;
   if(r.read)h+=`<div class="fix">Read as <b>${esc(r.read)}</b></div>`;
   if(r.ignored.length)h+=`<div class="err">Ignored ${quoted(r.ignored)}: not part of the plan</div>`;
   if(r.errors.length)h+=`<div class="err">Skipped ${quoted(r.errors)}</div>`;
-  $('summary').innerHTML=h;
+  return h;
 }
 
 function renderList(){
@@ -700,32 +718,75 @@ function renderNote(){
 let routines=[];
 try{routines=JSON.parse(load('ic-routines')||'[]');if(!Array.isArray(routines))routines=[]}catch(e){routines=[]}
 function saveRoutines(){store('ic-routines',JSON.stringify(routines))}
+/* In Edit mode a tap opens that routine in the editor below the chips (name, shorthand with its explanation,
+   Save, Cancel, Delete); Delete needs a second tap within 4 seconds. Shorthand is saved tidied ("4--10-5" is
+   kept as "4-10-5"), so a saved routine holds what will actually run. */
+let editing=-1;
 function renderSaved(){
   const box=$('saved');box.innerHTML='';
   $('mine').hidden=!routines.length;
   if(!routines.length){box.classList.remove('manage');$('manage').textContent='Edit'}
-  const cur=$('plan').value.trim().toLowerCase();
+  const manage=box.classList.contains('manage');
+  $('edhint').hidden=!manage||editing>=0;
+  const cur=tidy($('plan').value).text.toLowerCase();
   routines.forEach((r,i)=>{
-    const b=document.createElement('button');b.type='button';b.className='chip'+(r.text.trim().toLowerCase()===cur?' match':'');
+    const b=document.createElement('button');b.type='button';b.className='chip'+(r.text.trim().toLowerCase()===cur?' match':'')+(i===editing?' editing':'');
     b.title=r.text;
     const nm=document.createElement('span');nm.textContent=r.name;b.appendChild(nm);
-    const x=document.createElement('span');x.className='x';x.textContent='×';x.setAttribute('aria-hidden','true');b.appendChild(x);
+    const ed=document.createElement('span');ed.className='ed';ed.textContent='✎';ed.setAttribute('aria-hidden','true');b.appendChild(ed);
     b.onclick=()=>{
-      if(box.classList.contains('manage')){routines.splice(i,1);saveRoutines();renderSaved();return}
+      if(box.classList.contains('manage')){openEditor(i);return}
       $('plan').value=r.text;applyText(r.text,true);store('ic-plan',r.text);renderSaved();
     };
     box.appendChild(b);
   });
 }
-$('manage').onclick=()=>{const box=$('saved');box.classList.toggle('manage');$('manage').textContent=box.classList.contains('manage')?'Done':'Edit'};
+function openEditor(i){
+  editing=i;const r=routines[i];
+  $('edname').value=r.name;$('edtext').value=r.text;
+  resetDel();edExplain();$('editor').hidden=false;renderSaved();
+}
+function closeEditor(){editing=-1;resetDel();$('editor').hidden=true;renderSaved()}
+function edExplain(){
+  const t=$('edtext').value,r=parsePlan(t);
+  $('edsum').innerHTML=r.intervals.length?explainHTML(r):`<div class="err">${t.trim()?"Couldn't read that. Try something like 6-10-8/4-10-8.":'Type the shorthand for this routine.'}</div>`;
+  return r;
+}
+function edSave(){
+  const r=edExplain();if(!r.intervals.length){$('edtext').focus();return}
+  const text=tidy($('edtext').value).text,name=($('edname').value.trim()||text).slice(0,40);
+  if(routines.some((x,j)=>j!==editing&&x.name.toLowerCase()===name.toLowerCase())){
+    $('edsum').insertAdjacentHTML('beforeend',`<div class="err">Another routine is already called “${esc(name)}”.</div>`);$('edname').focus();return;
+  }
+  routines[editing]={name,text};saveRoutines();closeEditor();
+}
+let delTimer=null;
+function resetDel(){clearTimeout(delTimer);delTimer=null;$('eddel').textContent='Delete';$('eddel').classList.remove('armed')}
+$('eddel').onclick=()=>{
+  if(!delTimer){$('eddel').textContent='Tap again to delete';$('eddel').classList.add('armed');delTimer=setTimeout(resetDel,4000);return}
+  routines.splice(editing,1);saveRoutines();closeEditor();
+};
+$('edsave').onclick=edSave;
+$('edcancel').onclick=closeEditor;
+let edDeb;
+$('edtext').addEventListener('input',()=>{clearTimeout(edDeb);edDeb=setTimeout(edExplain,180)});
+for(const id of ['edname','edtext'])$(id).addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();if(id==='edname')$('edtext').focus();else edSave()}   // inside the main form: keep Enter from loading the plan
+  else if(e.key==='Escape')closeEditor();
+});
+$('manage').onclick=()=>{
+  const box=$('saved');box.classList.toggle('manage');
+  $('manage').textContent=box.classList.contains('manage')?'Done':'Edit';
+  if(!box.classList.contains('manage')&&editing>=0)closeEditor();else renderSaved();
+};
 $('savebtn').onclick=()=>{
-  const text=$('plan').value.trim();if(!text)return;
+  const text=tidy($('plan').value).text;if(!text)return;
   const ex=routines.find(r=>r.text.trim().toLowerCase()===text.toLowerCase());
   $('savename').value=ex?ex.name:'';
   $('saverow').hidden=false;$('savename').focus();
 };
 function commitSave(){
-  const text=$('plan').value.trim(),name=($('savename').value.trim()||text).slice(0,40);
+  const text=tidy($('plan').value).text,name=($('savename').value.trim()||text).slice(0,40);
   if(!text)return;
   const i=routines.findIndex(r=>r.name.toLowerCase()===name.toLowerCase()||r.text.trim().toLowerCase()===text.toLowerCase());
   if(i>=0)routines[i]={name,text};else routines.push({name,text});
